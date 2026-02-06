@@ -1,0 +1,232 @@
+✅ PRODUCT REQUIREMENTS DOCUMENT (PRD)
+Project: Multi-Tenant AI Pharmacy Chatbot Platform
+Version: 1.0
+Owner: You
+Date: Current
+
+1. Overview
+This project is a multi-tenant AI chatbot platform designed for pharmacies. Each pharmacy (tenant) can embed a chat widget on their website that allows customers to ask medication questions, check inventory availability, and receive safe, AI-powered guidance.
+The backend is built with Laravel, the AI model is Google Gemini (API), and the knowledge system uses RAG (Retrieval Augmented Generation) via embeddings stored in a vector database.
+The chatbot must:
+Provide pharmacy-specific answers
+Retrieve live data from each pharmacy’s database
+Operate safely within healthcare guidelines
+Support multiple pharmacies with strict data isolation
+Scale as a SaaS product
+Be easily embeddable using a simple JS script
+
+2. Goals & Non-Goals
+2.1 Goals
+Build a SaaS multi-tenant chatbot system for pharmacies.
+Provide accurate, safe AI responses using Gemini + RAG.
+Store each pharmacy’s data (inventory, medications, FAQs) in tenant-isolated DB or schema.
+Provide an embeddable widget that any pharmacy can paste into their website.
+Enable pharmacies to upload/update their medication database.
+Provide an admin dashboard for each pharmacy to view conversations and handle escalations.
+Provide server-side safety rules to avoid harmful medical guidance.
+Provide onboarding, tenant creation, and provisioning flows.
+2.2 Non-Goals
+Not responsible for diagnosing illnesses.
+Not responsible for offering official prescriptions (must escalate to human).
+Not intended to handle payment or checkout workflows.
+
+3. Target Users
+3.1 Pharmacy Owners
+Want a plug-and-play AI assistant to answer customer questions.
+3.2 Pharmacy Staff (Pharmacists/Admins)
+Need to review, override, or escalate conversations.
+3.3 End Users (Customers)
+Ask questions about medicines, availability, dosage ranges, interactions, etc.
+
+4. System Architecture (High Level)
+4.1 Frontend
+Embeddable Widget (vanilla JS or Vue build → single JS bundle):
+Loaded by <script src="https://cdn.app.com/widget.js"></script>
+But focus mainly on backend for now
+Connects to API using tenant token
+Sends/receives chat messages
+Displays chat UI
+Does not contain business logic (all intelligence server-side)
+4.2 Backend (Laravel)
+Core services:
+Tenant Service (multi-tenant management)
+Chat Controller (API for message exchange)
+RAG Pipeline:
+Entity detection
+Vector DB query
+Context builder
+Gemini API call
+Embedding Ingestion Service
+Safety Policy Engine
+Admin Dashboard
+4.3 Data Storage
+SQL DB (MySQL/Postgres) for user, tenant, messages, inventory
+Vector DB options (decided by developer):
+pgvector (recommended for MVP)
+OR Pinecone (managed)
+S3 bucket for storing ingestion files (optional)
+4.4 AI Services
+Google Gemini API for generation
+Gemini Embeddings API for vectorization
+
+5. Functional Requirements
+5.1 Multi-Tenancy
+System must support multiple pharmacies, each isolated logically.
+Each tenant must have:
+unique tenant_id
+unique API token
+its own medications, inventory, FAQs
+its own vector namespace/collection
+Two modes supported:
+Single DB with tenant_id column (MVP)
+Per-tenant DB for enterprise customers (later)
+5.2 Embeddable Chat Widget
+Loadable via <script> tag
+Configurable via global JS object:
+window.PharmaiWidgetConfig = {
+  tenantToken: "abc123",
+  apiBase: "https://api.yoursaas.com",
+  branding: { color: "#0084ff", name: "Pharmacy X" }
+};
+Chat UI displays:
+Welcome message
+Chat messages
+Typing animation
+Error messages
+Quick suggestions (optional)
+5.3 Chat Conversation API
+Endpoint:
+POST /api/tenant/{tenantId}/chat
+Request:
+{
+  "message": "Do you have Augmentin 625mg in stock?",
+  "session_id": "optional"}
+Server behavior:
+Authenticate tenant with tenantToken
+Append message to conversation
+Run Safety Engine
+Run RAG pipeline
+Send refined prompt + context to Gemini
+Save assistant reply
+Return response to widget
+Response:
+{
+  "response": "...",
+  "escalation": false}
+5.4 RAG (Retrieval Augmented Generation)
+Pipeline steps:
+Parse user message, extract medication name
+Query vector DB for matching documents (inventory/FAQ/SOP)
+Build structured context block:
+Medication: Augmentin
+Status: In stock (12 units)
+Common uses: ...
+Dosage warning: Do not provide prescriptions.
+Compose system + context + user message
+Call Gemini for final response
+5.5 Safety Engine Requirements
+Server must NOT allow Gemini to:
+Provide unverified child/pregnancy dosage
+Give prescription-level dosing
+Recommend controlled substances
+Diagnose illnesses
+Triggers escalation:
+“How much should I take?”
+“Can I give this to a child?”
+“Can you prescribe something?”
+Escalation response format:
+{
+  "response": "I need to connect you to a licensed pharmacist.",
+  "escalation": true}
+5.6 Admin Dashboard (Per Pharmacy)
+Features:
+Login / authentication
+View conversations
+Respond to escalations
+Upload:
+Medication CSV
+Inventory CSV
+FAQ documents
+Re-index knowledge base (embeddings)
+Adjust brand settings for widget
+
+6. Non-Functional Requirements
+6.1 Security
+All traffic via HTTPS
+Tenant isolation enforced server-side
+API keys stored in environment variables
+Encrypt PII fields
+Audit logs for pharmacist replies
+6.2 Performance
+Widget JS size < 80 KB
+API response < 1.5 seconds on average
+Embedding ingestion runs async via queue
+6.3 Scalability
+Vector DB must support separate namespaces
+
+Laravel queues for ingestion
+Stateless API → horizontal scaling possible
+
+7. Data Model Summary
+7.1 Tables
+tenants
+tenant_settings
+users
+conversations
+messages
+medications
+inventory
+faq_docs
+vector_index (or external Pinecone)
+7.2 Key Fields
+tenants
+id
+name
+tenant_token
+db_mode (shared | isolated)
+vector_namespace
+branding JSON
+medications
+id
+tenant_id
+name
+generic
+indications
+interactions
+side_effects
+
+8. API List (MVP)
+Public
+POST /api/tenant/chat
+Admin
+POST /admin/login
+GET /admin/conversations
+POST /admin/upload-medications
+POST /admin/upload-inventory
+POST /admin/reindex
+POST /admin/messages/reply
+
+9. Flow Examples
+9.1 Basic User Flow
+User opens pharmacy site
+Widget loads → fetches branding
+User types question
+Widget sends to Laravel
+RAG → Gemini
+Response returned
+User may escalate → pharmacist responds manually
+9.2 Tenant Onboarding Flow
+Pharmacy signs up
+System creates tenant + token
+Tenant receives embed snippet
+Tenant uploads inventory/medications
+System indexes data (embeddings)
+Widget is now functional
+
+10. Future Enhancements
+Voice input
+WhatsApp integration
+Multi-language support
+Analytics dashboard (trending medicines, common questions)
+Paid subscription tiers
+Auto-suggestions based on symptoms (with safety controls)
