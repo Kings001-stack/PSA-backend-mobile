@@ -17,6 +17,13 @@ class Advert extends Model
         'is_active',
     ];
 
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image_path ? asset('storage/' . $this->image_path) : null;
+    }
+
     protected function casts(): array
     {
         return [

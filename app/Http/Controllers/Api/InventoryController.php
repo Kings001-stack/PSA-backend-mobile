@@ -13,9 +13,19 @@ class InventoryController extends Controller
      */
     public function index(Request $request)
     {
+        $user = $request->user();
+        $isAdmin = $user->isAdmin();
+        
         $inventory = Inventory::with('medication')
             ->orderBy('id', 'desc')
             ->paginate(15);
+        
+        // Hide prices from non-admin users
+        if (!$isAdmin) {
+            $inventory->getCollection()->each(function ($item) {
+                $item->makeHidden(['unit_price']);
+            });
+        }
             
         return response()->json($inventory);
     }
@@ -31,6 +41,7 @@ class InventoryController extends Controller
             'quantity' => 'required|integer|min:1',
             'batch_number' => 'required|string',
             'expiry_date' => 'required|date',
+            'unit_price' => 'nullable|numeric|min:0',
         ]);
 
         $user = $request->user();
@@ -51,6 +62,7 @@ class InventoryController extends Controller
             'quantity' => $request->quantity,
             'batch_number' => $request->batch_number,
             'expiry_date' => $request->expiry_date,
+            'unit_price' => $request->unit_price,
         ]);
 
         return response()->json([
@@ -66,14 +78,23 @@ class InventoryController extends Controller
     {
         $inventory = Inventory::findOrFail($id);
 
-        $request->validate([
+        $validated = $request->validate([
             'quantity' => 'sometimes|integer|min:0',
-            'reorder_level' => 'sometimes|integer|min:0',
+            'reorder_level' => 'sometimes|nullable|integer|min:0',
             'batch_number' => 'sometimes|string',
             'expiry_date' => 'sometimes|date',
+            'unit_price' => 'sometimes|nullable|numeric|min:0',
         ]);
 
-        $inventory->update($request->all());
+        // Convert empty strings to null for nullable fields
+        if (isset($validated['reorder_level']) && $validated['reorder_level'] === '') {
+            $validated['reorder_level'] = null;
+        }
+        if (isset($validated['unit_price']) && $validated['unit_price'] === '') {
+            $validated['unit_price'] = null;
+        }
+
+        $inventory->update($validated);
 
         return response()->json([
             'message' => 'Stock updated successfully',

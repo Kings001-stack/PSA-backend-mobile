@@ -24,6 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant.auth' => \App\Http\Middleware\TenantAuthentication::class,
             'rate.limit' => \App\Http\Middleware\RateLimitMiddleware::class,
+            'api.rate.limit' => \App\Http\Middleware\ApiRateLimiter::class,
+            'pharmacist' => \App\Http\Middleware\EnsureUserIsPharmacist::class,
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'super.admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

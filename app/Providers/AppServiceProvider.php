@@ -25,8 +25,16 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         \Illuminate\Support\Facades\Gate::define('admin', function ($user) {
-            \Log::info('Checking Admin Gate', ['user_id' => $user->id, 'role' => $user->role]);
-            return in_array($user->role, ['admin', 'pharmacist', 'staff']);
+            $allowedRoles = ['admin', 'pharmacist'];
+            $isAllowed = in_array(strtolower($user->role), $allowedRoles);
+            
+            \Log::info('Checking Admin Gate', [
+                'user_id' => $user->id, 
+                'role' => $user->role,
+                'result' => $isAllowed ? 'ALLOWED' : 'DENIED'
+            ]);
+            
+            return $isAllowed;
         });
     }
 }

@@ -175,9 +175,10 @@ class ChatController extends Controller
             ->get()
             ->map(function ($item) {
                 $name = $item->medication ? $item->medication->name : 'Unknown';
-                $price = $item->medication ? $item->medication->price : 'N/A';
                 $qty = $item->quantity;
-                return "- {$name} (Price: \${$price}): " . ($qty > 0 ? "{$qty} units" : "OUT OF STOCK");
+                // Hide exact quantities and prices - only show availability status
+                $status = $qty > 0 ? "In Stock" : "Out of Stock";
+                return "- {$name}: {$status}";
             })
             ->unique()
             ->implode("\n");
@@ -198,9 +199,10 @@ CURRENT INVENTORY & PRICES:
 
 GUIDELINES:
 1. **Focus:** Help with medicine availability, prices, and pharmacy logistics.
-2. **Medical Safety:** If asked for medical advice or dosages, politely explain that you are an AI and they should consult our pharmacist or a doctor.
-3. **Emergencies & Contact:** If a user mentions severe symptoms, or asks for our phone number/how to reach us, immediately provide the hotline **09071906688** and location (Karu Site).
-4. **Tone:** Professional, empathetic, and concise.
+2. **Stock Information:** You can tell customers if a medication is "available" or "in stock", but NEVER reveal specific quantities or stock numbers. Simply say "Yes, we have [medication name] in stock" or "Unfortunately, [medication name] is currently out of stock."
+3. **Medical Safety:** If asked for medical advice or dosages, politely explain that you are an AI and they should consult our pharmacist or a doctor.
+4. **Emergencies & Contact:** If a user mentions severe symptoms, or asks for our phone number/how to reach us, immediately provide the hotline **09071906688** and location (Karu Site).
+5. **Tone:** Professional, empathetic, and concise.
 
 HISTORY:
 {$history}

@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             TenantSeeder::class,
             UserSeeder::class,
             MedicationSeeder::class,
+            InventorySeeder::class,
         ]);
     }
 }

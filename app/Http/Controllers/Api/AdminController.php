@@ -20,11 +20,8 @@ class AdminController extends Controller
         // 1. Total distinct medications in the catalog
         $totalMedications = Medication::count();
         
-        // 2. Aggregate Inventory Value across all stock
-        $totalInventoryValue = DB::table('inventory')
-            ->join('medications', 'inventory.medication_id', '=', 'medications.id')
-            ->where('inventory.tenant_id', $tenantId)
-            ->sum(DB::raw('inventory.quantity * medications.price'));
+        // 2. Aggregate Active Adverts
+        $activeAdvertsCount = \App\Models\Advert::active()->count();
 
         // 3. Low Stock Analytics (Aggregated by medication)
         // Find medications where the combined quantity of all batches is low
@@ -39,12 +36,16 @@ class AdminController extends Controller
             ->where('expiry_date', '>', now())
             ->count();
 
+        // 5. Pending Refill Requests
+        $pendingRefillsCount = \App\Models\RefillRequest::where('status', 'pending')->count();
+
         return response()->json([
             'stats' => [
                 'total_medications' => $totalMedications,
                 'low_stock_count' => $lowStockMedications->count(),
-                'total_value' => round((float)$totalInventoryValue, 2),
+                'active_adverts' => $activeAdvertsCount,
                 'expiring_soon' => $expiringSoonCount,
+                'pending_refills' => $pendingRefillsCount,
             ],
             'low_stock_alerts' => $lowStockMedications->map(fn($item) => [
                 'id' => $item->medication_id,

@@ -17,14 +17,29 @@ class Inventory extends Model
         'medication_id',
         'quantity',
         'reorder_level',
+        'reorder_quantity',
         'expiry_date',
         'batch_number',
+        'supplier',
+        'unit_price',
+        'unit_cost',
+        'selling_price',
+        'markup_percentage',
+        'low_stock_alert_sent',
+        'last_restocked_at',
+        'status',
     ];
 
     protected function casts(): array
     {
         return [
             'expiry_date' => 'date',
+            'unit_price' => 'decimal:2',
+            'unit_cost' => 'decimal:2',
+            'selling_price' => 'decimal:2',
+            'markup_percentage' => 'decimal:2',
+            'low_stock_alert_sent' => 'boolean',
+            'last_restocked_at' => 'datetime',
         ];
     }
 
