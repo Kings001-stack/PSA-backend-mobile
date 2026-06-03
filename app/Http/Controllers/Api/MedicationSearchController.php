@@ -43,6 +43,7 @@ class MedicationSearchController extends Controller
                 }
                 
                 return [
+                    'id' => $medication->id,
                     'name' => $medication->name,
                     'dosage' => $medication->strength,
                     'form' => $medication->dosage_form,

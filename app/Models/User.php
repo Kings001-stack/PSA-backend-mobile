@@ -109,11 +109,19 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the user is a pharmacist (has admin access).
+     * Check if the user is a pharmacist (has dashboard access).
+     */
+    public function isPharmacist(): bool
+    {
+        return $this->role === 'pharmacist';
+    }
+
+    /**
+     * Check if the user is an admin (alias for isPharmacist for backward compatibility).
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'pharmacist';
+        return $this->isPharmacist();
     }
 
     /**
@@ -125,19 +133,19 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the user is a pharmacist.
-     */
-    public function isPharmacist(): bool
-    {
-        return $this->role === 'pharmacist';
-    }
-
-    /**
-     * Check if the user is a regular user.
+     * Check if the user is a regular user (customer/patient).
      */
     public function isUser(): bool
     {
         return $this->role === 'user';
+    }
+
+    /**
+     * Check if user has dashboard access (pharmacist or super_admin).
+     */
+    public function hasDashboardAccess(): bool
+    {
+        return in_array($this->role, ['pharmacist', 'super_admin']);
     }
 
     /**

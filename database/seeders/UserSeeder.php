@@ -41,7 +41,7 @@ class UserSeeder extends Seeder
                 'name' => 'Staff User',
                 'email' => "staff@{$tenant->id}.test",
                 'password' => Hash::make('password'),
-                'role' => 'staff',
+                'role' => 'user',
             ]);
         }
 

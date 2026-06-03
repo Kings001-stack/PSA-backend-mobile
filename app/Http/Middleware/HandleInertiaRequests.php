@@ -35,16 +35,37 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        return [
-            ...parent::share($request),
+        return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user(),
-                'tenant' => $request->user()?->tenant,
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'role' => $request->user()->role,
+                    'avatar_url' => $request->user()->avatar_url,
+                    'account_status' => $request->user()->account_status,
+                    'is_super_admin' => $request->user()->isSuperAdmin(),
+                    'is_pharmacist' => $request->user()->isPharmacist(),
+                    'is_admin' => $request->user()->isAdmin(),
+                ] : null,
+                'tenant' => $request->user()?->tenant ? [
+                    'id' => $request->user()->tenant->id,
+                    'name' => $request->user()->tenant->name,
+                ] : null,
             ],
             'flash' => [
-                'success' => $request->session()->get('success'),
-                'error' => $request->session()->get('error'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
+                'info' => fn () => $request->session()->get('info'),
             ],
-        ];
+            // Use pre-generated ziggy routes instead of generating on each request
+            'ziggy' => function () use ($request) {
+                return [
+                    ...(new \Tighten\Ziggy\Ziggy)->toArray(),
+                    'location' => $request->url(),
+                ];
+            },
+        ]);
     }
 }

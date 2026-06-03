@@ -13,51 +13,40 @@ class DashboardController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-
-        // Get pharmacy stats
-        $totalMedications = Medication::count();
-        $totalInventory = Inventory::sum('quantity');
-        $lowStockCount = Inventory::whereColumn('quantity', '<', 'reorder_level')->count();
-        $expiringSoonCount = Inventory::where('expiry_date', '<=', now()->addDays(30))
-            ->where('expiry_date', '>', now())
-            ->count();
-
+        
+        // Calculate stats immediately (not lazy)
         $stats = [
-            'totalMedications' => $totalMedications,
-            'totalInventory' => $totalInventory,
-            'lowStockAlerts' => $lowStockCount,
-            'expiringSoon' => $expiringSoonCount,
+            'totalMedications' => Medication::count(),
+            'totalInventory' => Inventory::sum('quantity') ?? 0,
+            'lowStockAlerts' => Inventory::whereColumn('quantity', '<', 'reorder_level')->count(),
+            'expiringSoon' => Inventory::whereBetween('expiry_date', [now(), now()->addDays(30)])->count(),
         ];
-
-        // Get low stock items for the table
-        $lowStockItems = Inventory::with('medication')
-            ->whereColumn('quantity', '<', 'reorder_level')
-            ->orWhere(function ($query) {
-                $query->where('expiry_date', '<=', now()->addDays(30))
-                    ->where('expiry_date', '>', now());
+        
+        // Get alert items immediately
+        $alertItems = Inventory::with('medication:id,name')
+            ->select('id', 'medication_id', 'quantity', 'reorder_level', 'expiry_date', 'batch_number', 'updated_at')
+            ->where(function ($query) {
+                $query->whereColumn('quantity', '<', 'reorder_level')
+                    ->orWhereBetween('expiry_date', [now(), now()->addDays(30)]);
             })
             ->latest()
             ->limit(10)
             ->get()
-            ->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'medication_name' => $item->medication?->name ?? 'Unknown',
-                    'quantity' => $item->quantity,
-                    'reorder_level' => $item->reorder_level ?? 10,
-                    'expiry_date' => $item->expiry_date,
-                    'batch_number' => $item->batch_number,
-                    'is_low_stock' => $item->quantity < ($item->reorder_level ?? 10),
-                    'is_expiring' => $item->expiry_date && $item->expiry_date <= now()->addDays(30),
-                    'updated_at' => $item->updated_at,
-                ];
-            });
-
+            ->map(fn ($item) => [
+                'id' => $item->id,
+                'medication_name' => $item->medication?->name ?? 'Unknown',
+                'quantity' => $item->quantity,
+                'reorder_level' => $item->reorder_level ?? 10,
+                'expiry_date' => $item->expiry_date,
+                'batch_number' => $item->batch_number,
+                'is_low_stock' => $item->quantity < ($item->reorder_level ?? 10),
+                'is_expiring' => $item->expiry_date && $item->expiry_date <= now()->addDays(30),
+                'updated_at' => $item->updated_at?->diffForHumans(),
+            ]);
+        
         return Inertia::render('Dashboard', [
-            'user' => $user,
-            'tenant' => $user->tenant,
             'stats' => $stats,
-            'alertItems' => $lowStockItems,
+            'alertItems' => $alertItems,
         ]);
     }
 }

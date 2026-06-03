@@ -28,21 +28,37 @@ class InventorySeeder extends Seeder
             return;
         }
 
+        $index = 0;
         foreach ($medications as $medication) {
             // Generate random but realistic inventory quantities
             $quantity = rand(50, 500);
             $reorderLevel = rand(20, 50);
+            $expiryDate = now()->addMonths(rand(6, 24));
+            
+            // Force a few low stock and expiring alerts for realistic dashboard testing
+            if ($index === 0) {
+                $quantity = 5;
+                $reorderLevel = 30; // Low stock
+            } else if ($index === 1) {
+                $expiryDate = now()->addDays(rand(5, 15)); // Expiring soon
+            } else if ($index === 2) {
+                $quantity = 8;
+                $reorderLevel = 25; // Low stock
+                $expiryDate = now()->addDays(rand(2, 8)); // Expiring soon
+            }
             
             Inventory::create([
                 'tenant_id' => $tenant->id,
                 'medication_id' => $medication->id,
                 'quantity' => $quantity,
                 'reorder_level' => $reorderLevel,
-                'expiry_date' => now()->addMonths(rand(6, 24)),
+                'expiry_date' => $expiryDate,
                 'batch_number' => 'BATCH-' . strtoupper(substr(md5($medication->name), 0, 8)),
                 'supplier' => $this->getRandomSupplier(),
                 'cost_price' => $medication->price * 0.6, // 40% markup
             ]);
+            
+            $index++;
         }
 
         $this->command->info('✓ Seeded inventory for ' . $medications->count() . ' medications');

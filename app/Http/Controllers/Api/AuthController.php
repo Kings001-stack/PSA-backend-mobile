@@ -194,7 +194,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:20',
-            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
         // Update basic info

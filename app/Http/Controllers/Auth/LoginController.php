@@ -31,8 +31,23 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-
-            return redirect()->intended('/dashboard');
+            
+            $user = Auth::user();
+            
+            // Fast role-based redirect
+            if ($user->isSuperAdmin()) {
+                return redirect()->intended('/super-admin/dashboard');
+            }
+            
+            if ($user->isPharmacist() || $user->isAdmin()) {
+                return redirect()->intended('/dashboard');
+            }
+            
+            // Regular users should not access web dashboard
+            Auth::logout();
+            return back()->withErrors([
+                'email' => 'You do not have permission to access this dashboard.',
+            ])->onlyInput('email');
         }
 
         return back()->withErrors([

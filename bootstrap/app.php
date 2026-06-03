@@ -29,6 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'super.admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            // Web dashboard middleware
+            'web.pharmacist' => \App\Http\Middleware\RedirectIfNotPharmacist::class,
+            'web.super.admin' => \App\Http\Middleware\RedirectIfNotSuperAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
